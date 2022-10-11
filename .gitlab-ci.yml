@@ -1,0 +1,26 @@
+stages:          # List of stages for jobs, and their order of execution
+  - build
+  - push
+  - deploy
+
+build-job:       
+  stage: build
+  script:
+    - docker login -u ${DOCKER_USER} --password-stdin ${DOCKER_PASS}
+    - docker build . -t simple_go_app -f build/go/Dockerfile
+    - docker build . -t simple_node_app -f build/go/Dockerfile 
+
+push-job:   
+  stage: push    
+  script:
+    - docker image tag simple_go_app:latest ${DOCKER_USER}/test_app:go
+    - docker image tag simple_node_app:latest ${DOCKER_USER}/test_app:node
+    - docker image push ${DOCKER_USER}/test_app:go
+    - docker image push ${DOCKER_USER}/test_app:node
+
+deploy-job:      
+  stage: deploy  
+  environment: production
+  script:
+    - kubectl apply -f manifest/go.yaml
+    - kubectl apply -f manifest/node.yaml
